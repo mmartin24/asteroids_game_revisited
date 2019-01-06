@@ -13,7 +13,9 @@
     <script>
       /** @type {HTMLcanvasElement} */
       const FPS = 30; // frames per second
+      const FRICTION = 0.7; // friction coefficient of space (0 = no friction, 1 = lots of friction)
       const SHIP_SIZE = 30; // ship height in pixels
+      const SHIP_THRUST = 5; // acceleration of the ship in pixels per second per second
       const TURN_SPEED = 360; // turn speed in degrees per second
 
       var canv = document.getElementById('gameCanvas');
@@ -24,7 +26,12 @@
         y: canv.height / 2,
         r: SHIP_SIZE / 2,
         a: (90 / 180) * Math.PI, // convert 90 deg to radians
-        rot: 0
+        rot: 0,
+        thrusting: false,
+        thrust: {
+          x: 0,
+          y: 0
+        }
       };
 
       // set up event handler
@@ -40,8 +47,9 @@
             ship.rot = ((TURN_SPEED / 180) * Math.PI) / FPS;
             break;
           case 38: // up arrow (thrust ship forward)
+            ship.thrusting = true;
             break;
-          case 39: // right arrow (rotate ship right)
+          case 39: // right arrow (rotate ship right!)
             ship.rot = ((-TURN_SPEED / 180) * Math.PI) / FPS;
             break;
         }
@@ -53,8 +61,9 @@
             ship.rot = 0;
             break;
           case 38: // up arrow (stop thrusting)
+            ship.thrusting = false;
             break;
-          case 39: // right arrow (stop rotating right!)
+          case 39: // right arrow (stop rotating right)
             ship.rot = 0;
             break;
         }
@@ -64,6 +73,16 @@
         // draw space
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, canv.width, canv.height);
+
+        // thrust the ship
+
+        if (ship.thrusting) {
+          ship.thrust.x += (SHIP_THRUST * Math.cos(ship.a)) / FPS;
+          ship.thrust.y -= (SHIP_THRUST * Math.sin(ship.a)) / FPS;
+        } else {
+          ship.thrust.x -= (FRICTION * ship.thrust.x) / FPS;
+          ship.thrust.y -= (FRICTION * ship.thrust.y) / FPS;
+        }
 
         // draw TRIANGULAR ship
         (ctx.strokeStyle = 'white'), (ctx.lineWidth = SHIP_SIZE / 20);
@@ -89,6 +108,20 @@
         ship.a += ship.rot;
 
         // move the ship
+        ship.x += ship.thrust.x;
+        ship.y += ship.thrust.y;
+
+        // handle edge of the screen
+        if (ship.x < 0 - ship.r) {
+          ship.x = canv.width + ship.r;
+        } else if (ship.x > canv.width + ship.r) {
+          ship.x = 0 - ship.r;
+        }
+        if (ship.y < 0 - ship.r) {
+          ship.y = canv.height + ship.r;
+        } else if (ship.y > canv.height + ship.r) {
+          ship.y = 0 - ship.r;
+        }
 
         // center dot
         ctx.fillStyle = 'red';
